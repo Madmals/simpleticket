@@ -1,5 +1,5 @@
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
+  <div class="about pa-6 d-flex justify-center">
+    <h1>Ticket open for customer</h1>
   </div>
 </template>
