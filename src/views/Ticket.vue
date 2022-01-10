@@ -5,14 +5,14 @@
     <v-list subheader flat class="pt-0">
       <v-subheader>Ticket Lists</v-subheader>
       <v-text-field
-      v-model="newTicket"
+        v-model="newTicket"
         class="pa-3"
         outlined
         hide-details
         filled
         clearable
-        @click:append="addTask"
-        @keyup.enter ="addTask"
+        @click:append="addnewTicket"
+        @keyup.enter="addnewTicket"
         label="Add Ticket"
         append-icon="mdi-sticker-plus-outline"
       ></v-text-field>
@@ -40,7 +40,7 @@
 
               <!-- add .stop in order prevent line throught happen too  -->
 
-              <v-list-item-action @click.stop="deleteTicket(index)">
+              <v-list-item-action @click.stop="dels(detail.id)">
                 <v-btn icon>
                   <v-icon color="red lighten-1">mdi-delete-circle</v-icon>
                 </v-btn>
@@ -55,33 +55,27 @@
 </template>
 
 <script>
-// const DB_NAME = "tickets";
-// const DB_VER = 1;
+const DB_NAME = "tickets";
+const DB_VER = 1;
 
 export default {
   name: "Ticket",
   data() {
     return {
-      newTicket:"",
+      newTicket: null,
       settings: "",
-      // db:null,
-      tickets: [
-        {
-          title: "ssd:data recovery request",
-          done: false,
-        },
-        { title: "power-supply: kaput customer cakap", done: false },
-      ],
+      db: null,
+      tickets: [],
     };
   },
-  // async created(){
-  //   this.db = await this.getDB()
-  //   this.ticket = await this.getTicketfromDB()
-  // },
+  async created() {
+    this.db = await this.getDb();
+    this.tickets = await this.getTicketfromDb();
+  },
 
   methods: {
-    addTask(){
-      this.tickets.unshift({title:this.newTicket, done:false})
+    addTicket() {
+      this.tickets.unshift({ title: this.newTicket, done: false });
     },
     doneTicket(id) {
       let ticket = this.tickets.filter((ticket) => ticket.id === id)[0];
@@ -90,12 +84,97 @@ export default {
     deleteTicket(idx) {
       this.tickets.splice(idx, 1);
     },
-  },
 
-  // async addTicket(){
-  //   let ticket ={
-  //     this.ticket
-  //   }
-  // }
+    async addnewTicket() {
+      if (this.newTicket) {
+        let ticket = {title:this.newTicket, done:false};
+        await this.addTickettoDb( ticket );
+        this.tickets = await this.getTicketfromDb();
+      } else {
+        return;
+      }
+    },
+    async dels(id) {
+      await this.deleteTicketfromDb(id);
+      this.tickets = await this.getTicketfromDb();
+    },
+
+    async addTickettoDb(ticket) {
+      return new Promise((resolve, reject) => {
+        let tx = this.db.transaction(["tickets"], "readwrite");
+        tx.oncomplete = () => {
+          resolve();
+        };
+        let store = tx.objectStore("tickets");
+        store.add(ticket);
+
+        tx.onerror = () => {
+          reject();
+        };
+      });
+    },
+
+    async deleteTicketfromDb(id) {
+      return new Promise((resolve, reject) => {
+        let tx = this.db.transaction(["tickets"], "readwrite");
+        tx.oncomplete = (e) => {
+          resolve(e);
+        };
+        let store = tx.objectStore("tickets");
+        store.delete(id);
+
+        tx.onerror = () => {
+          reject();
+        };
+      });
+    },
+
+    async getTicketfromDb() {
+      return new Promise((resolve, reject) => {
+        let tx = this.db.transaction(["tickets"], "readonly");
+        tx.oncomplete = () => {
+          resolve(tickets); //must return a value from below
+        };
+
+        tx.onerror = () => {
+          reject();
+        };
+
+        let store = tx.objectStore("tickets");
+        let tickets = [];
+
+        store.openCursor().onsuccess = (e) => {
+          let cursor = e.target.result;
+          if (cursor) {
+            tickets.push(cursor.value);
+            cursor.continue();
+          }
+        };
+      });
+    },
+    async getDb() {
+      return new Promise((resolve, reject) => {
+        let req = window.indexedDB.open(DB_NAME, DB_VER);
+
+        req.onupgradeneeded = (e) => {
+          console.log("onupgradeneeded");
+          let db = e.target.result;
+
+          db.createObjectStore("ticket", {
+            keyPath: "id",
+            autoIncrement: true,
+          });
+        };
+
+        req.onsuccess = (e) => {
+          resolve(e.target.result);
+        };
+
+        req.onerror = () => {
+          reject("error");
+        };
+      });
+    },
+  },
 };
 </script>
