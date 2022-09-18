@@ -70,7 +70,7 @@ export default {
   },
   async created() {
     this.db = await this.getDb();
-    this.tickets = await this.getTicketfromDb();
+    this.tickets = await this.getTicketfromDb()
   },
 
   methods: {
@@ -87,8 +87,8 @@ export default {
 
     async addnewTicket() {
       if (this.newTicket) {
-        let ticket = {title:this.newTicket, done:false};
-        await this.addTickettoDb( ticket );
+        let ticket = { title: this.newTicket, done: false };
+        await this.addTickettoDb(ticket);
         this.tickets = await this.getTicketfromDb();
       } else {
         return;
@@ -105,12 +105,12 @@ export default {
         tx.oncomplete = () => {
           resolve();
         };
-        let store = tx.objectStore("tickets");
-        store.add(ticket);
-
         tx.onerror = () => {
           reject();
         };
+        let store = tx.objectStore("tickets");
+        store.add(ticket);
+
       });
     },
 
@@ -143,6 +143,8 @@ export default {
         let store = tx.objectStore("tickets");
         let tickets = [];
 
+
+        //get store object to iterate or shown
         store.openCursor().onsuccess = (e) => {
           let cursor = e.target.result;
           if (cursor) {
@@ -160,7 +162,7 @@ export default {
           console.log("onupgradeneeded");
           let db = e.target.result;
 
-          db.createObjectStore("ticket", {
+          db.createObjectStore("tickets", {
             keyPath: "id",
             autoIncrement: true,
           });
